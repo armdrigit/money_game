@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>한국 지폐 터치 학습 게임</title>
+<style>
+  :root{--bg:#fff8e8;--card:#ffffff;--ink:#243044;--good:#2f9e44;--bad:#e03131;--accent:#5c7cfa;--soft:#eef2ff;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent} body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;background:linear-gradient(160deg,#fff8e8,#e7f5ff);color:var(--ink);min-height:100vh;touch-action:manipulation}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.title{font-size:clamp(24px,4vw,42px);font-weight:900}.pill{background:#fff;border:2px solid #dbe4ff;border-radius:999px;padding:10px 16px;font-weight:800;box-shadow:0 4px 12px #0001}.card{background:rgba(255,255,255,.92);border-radius:26px;padding:20px;margin-top:16px;box-shadow:0 12px 30px #0002;border:2px solid #fff}.screen{display:none}.screen.active{display:block}.btn{border:0;border-radius:20px;background:var(--accent);color:white;font-size:22px;font-weight:900;padding:16px 22px;box-shadow:0 7px 0 #364fc7;cursor:pointer;min-height:64px}.btn:active{transform:translateY(4px);box-shadow:0 3px 0 #364fc7}.btn.secondary{background:#ffd43b;color:#4b3b00;box-shadow:0 7px 0 #f08c00}.btn.ghost{background:#f1f3f5;color:#343a40;box-shadow:0 7px 0 #ced4da}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}.unit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}.unitBtn{padding:18px;border-radius:22px;border:3px solid #dbe4ff;background:#fff;font-size:20px;font-weight:900;box-shadow:0 6px 14px #0001}.unitBtn.locked{opacity:.45}.note{height:96px;border-radius:18px;border:4px solid #1f2937;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:1000;font-size:29px;background:linear-gradient(135deg,#f8f9fa,#dbe4ff);box-shadow:0 8px 15px #0002;position:relative;overflow:hidden;cursor:pointer;user-select:none}.note small{font-size:15px}.note:before,.note:after{content:"";position:absolute;border:2px solid #0002;border-radius:50%;width:56px;height:56px}.note:before{left:10px}.note:after{right:10px}.n1000{background:linear-gradient(135deg,#d0ebff,#a5d8ff)}.n5000{background:linear-gradient(135deg,#ffd8a8,#ffc078)}.n10000{background:linear-gradient(135deg,#b2f2bb,#8ce99a)}.n50000{background:linear-gradient(135deg,#fff3bf,#ffe066)}.question{font-size:clamp(26px,5vw,48px);font-weight:1000;text-align:center;margin:10px 0 18px}.sub{text-align:center;font-size:20px;font-weight:700;color:#495057}.feedback{min-height:62px;text-align:center;font-size:30px;font-weight:1000;margin-top:12px}.ok{color:var(--good)}.no{color:var(--bad)}.money-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}.basket{min-height:145px;border:5px dashed #91a7ff;background:#edf2ff;border-radius:24px;padding:14px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}.sumBox{text-align:center;font-size:30px;font-weight:1000;background:#fff3bf;border-radius:22px;padding:14px;margin:12px 0}.mini{font-size:16px;color:#495057}.progress{height:16px;background:#e9ecef;border-radius:99px;overflow:hidden;flex:1;min-width:180px}.bar{height:100%;background:#69db7c;width:0%}.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}.piece{position:absolute;font-size:28px;animation:fall 1.4s linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:.1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="title">💵 한국 지폐 터치 학습</div><div class="pill" id="scorePill">맞힌 게임 0 / 50</div></div>
+  <div class="card screen active" id="home">
+    <div class="question">지폐를 보고, 고르고, 더해요!</div>
+    <p class="sub">동전은 나오지 않아요. 1,000원 · 5,000원 · 10,000원 · 50,000원 지폐만 연습해요.</p>
+    <div class="grid" style="margin-top:20px">
+      <button class="btn" onclick="startApp()">▶ 시작하기</button>
+      <button class="btn secondary" onclick="showUnits()">단원 고르기</button>
+    </div>
+    <p class="mini" style="text-align:center;margin-top:20px">배경음악과 효과음은 시작 버튼을 누른 뒤 재생됩니다.</p>
+  </div>
+  <div class="card screen" id="units"><div class="question">단원을 골라요</div><div class="unit-grid" id="unitGrid"></div><div style="margin-top:18px"><button class="btn ghost" onclick="goHome()">처음으로</button></div></div>
+  <div class="card screen" id="game"><div class="top"><div class="pill" id="unitTitle"></div><div class="progress"><div class="bar" id="bar"></div></div><button class="btn ghost" onclick="showUnits()">단원</button></div><div id="gameArea"></div><div class="feedback" id="feedback"></div></div>
+</div><div class="confetti" id="confetti"></div>
+<script>
+const notes=[1000,5000,10000,50000];
+const labels={1000:'1,000원',5000:'5,000원',10000:'10,000원',50000:'50,000원'};
+let unit=1, game=1, score=0, audioCtx=null, musicTimer=null, selected=[];
+const units=[
+ {name:'1단원 지폐 이름 찾기', type:'classify', qs:[1000,5000,10000,50000,1000]},
+ {name:'2단원 같은 지폐 찾기', type:'same', qs:[1000,5000,10000,50000,5000]},
+ {name:'3단원 작은 합 찾기', type:'sumChoice', qs:[2000,6000,10000,11000,15000]},
+ {name:'4단원 두 장으로 만들기', type:'make2', qs:[6000,11000,15000,20000,55000]},
+ {name:'5단원 물건값 맞추기', type:'shop', qs:[1000,5000,6000,10000,15000]},
+ {name:'6단원 지폐 합 계산하기', type:'sumChoiceHard', qs:[[1000,1000,5000],[5000,5000],[10000,5000],[10000,10000,5000],[50000,10000]]},
+ {name:'7단원 알맞은 지폐 묶음', type:'bundle', qs:[7000,16000,25000,60000,65000]},
+ {name:'8단원 더 큰 금액 만들기', type:'compare', qs:[10000,15000,20000,55000,70000]},
+ {name:'9단원 여러 장 합 맞히기', type:'makeMulti', qs:[12000,21000,30000,65000,85000]},
+ {name:'10단원 목표 금액 맞추기', type:'target', qs:[16000,27000,56000,72000,91000]}
+];
+function money(n){return n.toLocaleString('ko-KR')+'원'}
+function note(v, cb='selectNote'){return `<div class="note n${v}" onclick="${cb}(${v})"><small>한국 지폐</small><span>${labels[v]}</span></div>`}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function startApp(){initAudio(); showUnits();}
+function goHome(){show('home')}
+function showUnits(){show('units'); const g=document.getElementById('unitGrid'); g.innerHTML=units.map((u,i)=>`<button class="unitBtn" onclick="startUnit(${i+1})">${i+1}단원<br><span class="mini">${u.name.replace(/^\d+단원 /,'')}</span></button>`).join('')}
+function startUnit(n){unit=n; game=1; renderGame();}
+function renderGame(){show('game'); selected=[]; document.getElementById('feedback').textContent=''; document.getElementById('unitTitle').textContent=`${unit}단원 · ${game}/5`; document.getElementById('bar').style.width=((game-1)/5*100)+'%'; const u=units[unit-1]; const q=u.qs[game-1]; if(u.type==='classify') renderClassify(q); if(u.type==='same') renderSame(q); if(u.type==='sumChoice') renderSumChoice(q,false); if(u.type==='make2') renderMake(q,2); if(u.type==='shop') renderShop(q); if(u.type==='sumChoiceHard') renderSumFromList(q); if(u.type==='bundle') renderBundle(q); if(u.type==='compare') renderCompare(q); if(u.type==='makeMulti') renderMake(q,4); if(u.type==='target') renderTarget(q);}
+function choices(correct){let arr=[...notes]; if(!arr.includes(correct)) arr=[1000,5000,10000,50000]; return arr.sort(()=>Math.random()-.5)}
+function renderClassify(q){gameArea.innerHTML=`<div class="question">${labels[q]} 지폐를 눌러요</div><div class="grid">${choices(q).map(v=>note(v,'answerNote')).join('')}</div>`; window.correct=q}
+function renderSame(q){gameArea.innerHTML=`<div class="question">위와 같은 지폐를 찾아요</div><div style="max-width:260px;margin:0 auto 18px">${note(q,'noop')}</div><div class="grid">${choices(q).map(v=>note(v,'answerNote')).join('')}</div>`; window.correct=q}
+function renderSumChoice(q){const opts=[q, q+1000, Math.max(1000,q-1000), q+5000].filter((v,i,a)=>v>0&&a.indexOf(v)===i).slice(0,4).sort(()=>Math.random()-.5); gameArea.innerHTML=`<div class="question">합이 ${money(q)}인 것을 골라요</div><div class="grid">${opts.map(v=>`<button class="btn secondary" onclick="answerAmount(${v})">${money(v)}</button>`).join('')}</div>`; window.correct=q}
+function renderMake(q,max){gameArea.innerHTML=`<div class="question">${money(q)}을 만들어요</div><div class="basket" id="basket">지폐를 눌러 담아요</div><div class="sumBox" id="sum">0원</div><div class="money-row">${notes.map(v=>note(v,'addNote')).join('')}</div><div class="grid" style="margin-top:14px"><button class="btn" onclick="checkMake(${q})">확인</button><button class="btn ghost" onclick="clearBasket()">다시</button></div>`}
+function renderShop(q){const item=['🍪 과자','🥛 우유','🍞 빵','🍎 사과','🧃 주스'][game-1]; renderMake(q,3); document.querySelector('.question').innerHTML=`${item} 값은 ${money(q)}이에요<br>알맞은 지폐를 담아요`}
+function renderSumFromList(arr){const s=arr.reduce((a,b)=>a+b,0); const wrong=[s+1000,s+5000,Math.max(1000,s-5000)].sort(()=>Math.random()-.5); const opts=[s,...wrong].sort(()=>Math.random()-.5); gameArea.innerHTML=`<div class="question">지폐의 합은 얼마일까요?</div><div class="money-row" style="margin-bottom:18px">${arr.map(v=>note(v,'noop')).join('')}</div><div class="grid">${opts.map(v=>`<button class="btn secondary" onclick="answerAmount(${v})">${money(v)}</button>`).join('')}</div>`; window.correct=s}
+function renderBundle(q){renderMake(q,5); document.querySelector('.question').textContent=`지폐 여러 장으로 ${money(q)}을 만들어요`}
+function renderCompare(q){const higher=q+5000; gameArea.innerHTML=`<div class="question">${money(q)}보다 더 큰 금액을 골라요</div><div class="grid"><button class="btn secondary" onclick="answerBool(false)">${money(Math.max(1000,q-5000))}</button><button class="btn secondary" onclick="answerBool(true)">${money(higher)}</button><button class="btn secondary" onclick="answerBool(false)">${money(q)}</button></div>`}
+function renderTarget(q){gameArea.innerHTML=`<div class="question">목표 금액: ${money(q)}</div><p class="sub">하단 지폐를 하나씩 눌러 위 칸에 올려요.</p><div class="basket" id="basket">여기에 지폐를 올려요</div><div class="sumBox" id="sum">현재 0원</div><div class="money-row">${notes.map(v=>note(v,'addNote')).join('')}</div><div class="grid" style="margin-top:14px"><button class="btn" onclick="checkMake(${q})">금액 확인</button><button class="btn ghost" onclick="clearBasket()">다시 하기</button></div>`}
+function noop(){}
+function answerNote(v){v===window.correct?good():bad()}
+function answerAmount(v){v===window.correct?good():bad()}
+function answerBool(v){v?good():bad()}
+function addNote(v){selected.push(v); updateBasket()}
+function clearBasket(){selected=[];updateBasket(); document.getElementById('feedback').textContent=''}
+function updateBasket(){const b=document.getElementById('basket'); const sum=selected.reduce((a,b)=>a+b,0); b.innerHTML=selected.length?selected.map(v=>note(v,'noop')).join(''):'지폐를 눌러 담아요'; document.getElementById('sum').textContent='현재 '+money(sum)}
+function checkMake(target){const sum=selected.reduce((a,b)=>a+b,0); sum===target?good():bad()}
+function good(){score++; scorePill.textContent=`맞힌 게임 ${score} / 50`; feedback.innerHTML='<span class="ok">참 잘했어요! 🎉</span>'; soundGood(); confetti(); setTimeout(()=>{ if(game<5){game++; renderGame()} else {unitClear()} },900)}
+function bad(){feedback.innerHTML='<span class="no">다시 해 볼까요? 💪</span>'; soundBad()}
+function unitClear(){document.getElementById('bar').style.width='100%'; gameArea.innerHTML=`<div class="question">${unit}단원 성공! 🌟</div><p class="sub">다음 단원으로 가 볼까요?</p><div class="grid"><button class="btn" onclick="startUnit(${Math.min(10,unit+1)})">다음 단원</button><button class="btn secondary" onclick="showUnits()">단원 고르기</button></div>`; feedback.textContent=''}
+function initAudio(){ if(audioCtx) return; audioCtx=new (window.AudioContext||window.webkitAudioContext)(); musicTimer=setInterval(playMusic,650); playMusic(); }
+let melody=[262,330,392,330,294,349,440,349], mi=0;
+function tone(freq,dur,type='sine',vol=.06){ if(!audioCtx)return; const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur)}
+function playMusic(){tone(melody[mi++%melody.length],.28,'triangle',.025)}
+function soundGood(){tone(523,.12,'sine',.08);setTimeout(()=>tone(659,.12,'sine',.08),120);setTimeout(()=>tone(784,.18,'sine',.08),240)}
+function soundBad(){tone(180,.18,'sawtooth',.06);setTimeout(()=>tone(130,.22,'sawtooth',.06),180)}
+function confetti(){const c=document.getElementById('confetti'); for(let i=0;i<18;i++){const p=document.createElement('div');p.className='piece';p.textContent=['🎉','⭐','💵','👏'][i%4];p.style.left=Math.random()*100+'vw';p.style.top='-40px';p.style.animationDelay=(Math.random()*.3)+'s';c.appendChild(p);setTimeout(()=>p.remove(),1800)}}
+showUnits(); show('home');
+</script>
+</body>
+</html>
